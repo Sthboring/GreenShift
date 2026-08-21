@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GreenShift App v2.0 | MRV Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/print.css" media="print">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+
+  <!-- Libraries: 100% offline -->
+  <script src="libs/chart.umd.min.js"></script>
+  <script src="libs/jspdf.umd.min.js"></script>
+  <script src="libs/html2canvas.min.js"></script>
+  <script src="libs/xlsx.full.min.js"></script>
+  
+  <!-- Config Modules -->
+  <script src="js/industries.js?v=2.2"></script>
+  <script src="js/cbam.js?v=2.2"></script>
+  <script src="js/calculator.js?v=2.2"></script>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="logo">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#fff"/>
+            <path d="M16 11l-4-4-4 4h3v4h2v-4h3z" fill="#10b981"/>
+          </svg>
+          GreenShift
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" data-target="view-setup" id="nav-setup">
+          <span>⚙️</span> Thiết lập
+        </div>
+        <div class="nav-item" data-target="view-entry" id="nav-entry">
+          <span>✍️</span> Nhập liệu
+        </div>
+        <div class="nav-item" data-target="view-cbam" id="nav-cbam" style="display: none;">
+          <span>💶</span> Tính CBAM
+        </div>
+        <div class="nav-item" data-target="view-dashboard" id="nav-dashboard" style="display: none;">
+          <span>📊</span> Dashboard
+        </div>
+        <div class="nav-item" data-target="view-report" id="nav-report" style="display: none;">
+          <span>📄</span> Báo cáo (9 mục)
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="company-name" id="sidebar-company-name">Chưa thiết lập</div>
+        <div id="sidebar-industry-name">Vietnamese SME</div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      
+      <!-- View: Setup -->
+      <section id="view-setup" class="view-section">
+        <div class="page-header" >
+          <h2 >Thiết lập Công ty & Ngành nghề</h2>
+        </div>
+        <div class="card" style="max-width: 600px; position: center; margin: 0 auto;">
+          <form id="setup-form">
+            <div class="form-group">
+              <label>Tên công ty *</label>
+              <input type="text" id="setup-name" class="form-control" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Mã số thuế</label>
+                <input type="text" id="setup-tax" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Năm báo cáo</label>
+                <select id="setup-year" class="form-control">
+                  <option value="2025" selected>2025</option>
+                  <option value="2026">2026</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Ngành nghề (Rất quan trọng) *</label>
+              <select id="setup-industry" class="form-control" required>
+                <!-- Dữ liệu được populate từ industries.js -->
+              </select>
+              <small id="setup-industry-desc" style="color: var(--color-primary); display:block; margin-top:0.5rem;"></small>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Doanh thu (triệu VNĐ) *</label>
+                <input type="number" id="setup-revenue" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label>Số lao động *</label>
+                <input type="number" id="setup-employees" class="form-control" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Sản lượng năm (tấn/sản phẩm) *</label>
+              <input type="number" id="setup-production" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Lưu Cấu hình & Bắt đầu &rarr;</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- View: Data Entry -->
+      <section id="view-entry" class="view-section active">
+        <div class="page-header">
+          <h2>Nhập liệu GHG (Tổng hợp năm)</h2>
+          <button id="btn-demo-data" class="btn btn-outline">Nạp dữ liệu mẫu (Theo ngành)</button>
+        </div>
+
+        <form id="entry-form-full">
+          <!-- SCOPE 1 -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <h3 style="color: var(--color-danger); margin-bottom: 1rem;">🔴 Scope 1 — Phát thải trực tiếp (Nhiên liệu, Hóa chất, Khí lạnh)</h3>
+            <div class="grid-3" id="scope1-container">
+              <!-- Dynamically populated fields -->
+            </div>
+          </div>
+
+          <!-- SCOPE 2 -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <h3 style="color: var(--color-warning); margin-bottom: 1rem;">🟡 Scope 2 — Phát thải gián tiếp (Điện, Nước, Hơi)</h3>
+            <div class="grid-3" id="scope2-container">
+              <!-- Dynamically populated fields -->
+            </div>
+          </div>
+
+          <!-- SCOPE 3 -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <h3 style="color: var(--color-primary); margin-bottom: 1rem;">🟢 Scope 3 — Chuỗi giá trị (Theo đặc thù ngành)</h3>
+            <div id="scope3-container">
+              <!-- Dynamically populated categories -->
+            </div>
+          </div>
+
+          <div class="sticky-footer" style="position: sticky; bottom: 0; background: var(--color-bg); padding: 1rem 0; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; z-index: 10;">
+             <div>
+               <span style="font-size: 1.2rem;">Tổng ước tính: <strong id="live-total-ghg" style="color: var(--color-danger); font-size: 1.5rem;">0.00</strong> tCO₂e</span>
+             </div>
+             <button type="submit" class="btn btn-primary btn-large">💾 Lưu Dữ liệu Năm</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- View: CBAM -->
+      <section id="view-cbam" class="view-section">
+        <div class="page-header">
+          <h2>Thuế Carbon Biên Giới EU (CBAM)</h2>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Công cụ tính chi phí</h3>
+            <form id="cbam-form">
+              <div class="form-group">
+                <label>Sản phẩm xuất khẩu EU</label>
+                <select id="cbam-product" class="form-control">
+                   <!-- Populated by JS -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Sản lượng xuất khẩu (tấn/năm)</label>
+                <input type="number" id="cbam-tonnes" class="form-control" required value="1000">
+              </div>
+              <div class="form-group">
+                <label>Năm xuất khẩu (Quyết định % CBAM Factor)</label>
+                <select id="cbam-year" class="form-control">
+                  <option value="2026">2026 (2.5% bị đánh thuế)</option>
+                  <option value="2027">2027 (5.0% bị đánh thuế)</option>
+                  <option value="2030">2030 (25.0% bị đánh thuế)</option>
+                  <option value="2034">2034 (100% bị đánh thuế)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="cbam-default-values"> Sử dụng Dữ liệu mặc định của EU (Default Values)
+                </label>
+                <small style="display:block; color:var(--color-text-secondary); margin-left: 1.5rem;">Đánh dấu nếu bạn KHÔNG có báo cáo MRV được xác minh (sẽ bị phạt thêm 50% lượng phát thải).</small>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width: 100%;">Tính toán &rarr;</button>
+            </form>
+          </div>
+
+          <div class="card" id="cbam-result" style="display:none; background-color: var(--color-card-bg);">
+             <h3 style="text-align: center; margin-bottom: 1.5rem;">Kết quả Tạm tính</h3>
+             
+             <div style="display:flex; justify-content: space-between; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem; margin-bottom: 1rem;">
+               <span>Phát thải nhúng (Embedded):</span>
+               <strong id="cbam-embedded-res">0.00 tCO₂e/tấn</strong>
+             </div>
+             <div style="display:flex; justify-content: space-between; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem; margin-bottom: 1rem;">
+               <span>Chứng chỉ CBAM cần mua:</span>
+               <strong id="cbam-certs-res">0 chứng chỉ</strong>
+             </div>
+             
+             <div style="text-align: center; margin: 2rem 0;">
+                <div style="font-size: 0.875rem; color: var(--color-text-secondary);">Tổng chi phí ước tính</div>
+                <div id="cbam-cost-eur" style="font-size: 2rem; color: var(--color-danger); font-weight: bold;">€0</div>
+                <div id="cbam-cost-vnd" style="font-size: 1.25rem; color: var(--color-text-primary);">~ 0 VNĐ</div>
+             </div>
+
+             <div id="cbam-savings-box" style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: var(--radius-md); border-left: 4px solid var(--color-primary);">
+                <strong>💡 Lợi ích của MRV:</strong> Bạn đang tiết kiệm được <span id="cbam-saving-vnd" style="color:var(--color-primary); font-weight:bold;">0 VNĐ</span> so với việc dùng Dữ liệu mặc định của EU.
+             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View: Dashboard -->
+      <section id="view-dashboard" class="view-section">
+        <div class="page-header">
+          <h2>Dashboard Phân Tích</h2>
+        </div>
+        
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-title">Tổng Phát Thải</div>
+            <div class="kpi-value" id="kpi-total">0.00</div>
+            <div class="kpi-unit">tCO₂e</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Scope 1 (Trực tiếp)</div>
+            <div class="kpi-value" id="kpi-s1">0.00</div>
+            <div class="kpi-unit">tCO₂e</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Scope 2 (Gián tiếp)</div>
+            <div class="kpi-value" id="kpi-s2">0.00</div>
+            <div class="kpi-unit">tCO₂e</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Scope 3 (Chuỗi GT)</div>
+            <div class="kpi-value" id="kpi-s3" style="color: var(--color-primary);">0.00</div>
+            <div class="kpi-unit">tCO₂e</div>
+          </div>
+        </div>
+
+        <div class="charts-grid" style="grid-template-columns: 1fr; max-width: 600px; margin: 1.5rem auto;">
+          <div class="chart-card">
+            <h3 style="text-align: center;">Tỷ trọng Phát thải (Scope 1, 2, 3)</h3>
+            <div class="chart-wrapper">
+              <canvas id="scopeChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 2rem;">
+          <h3>Benchmark Ngành: <span id="bench-industry" style="color:var(--color-primary)"></span></h3>
+          <div id="benchmarks-container" style="margin-top: 1.5rem;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- View: Report -->
+      <section id="view-report" class="view-section">
+        <div class="page-header">
+          <h2>Báo cáo 9 mục Chuẩn EU & Hành động</h2>
+          <div>
+            <button id="btn-export-excel" class="btn btn-primary">📥 Xuất Excel Báo Cáo</button>
+          </div>
+        </div>
+
+        <div id="report-content" class="report-container">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/storage.js?v=2.2"></script>
+  <script src="js/charts.js?v=2.2"></script>
+  <script src="js/report.js?v=2.2"></script>
+  <script src="js/main.js?v=2.2"></script>
+</body>
+</html>
